@@ -9,8 +9,9 @@
 
 ## Upcoming (sorted by priority)
 - Customizable Crossfade and other settings
-- Different views (so far theres only Album)
+- Different views (so far there's only Album)
 - Customizable Crossfade
+- Other file formats (m4a, aac, alac, flac, ogg, etc.)
 - Custom Icons
 - Toggle Dark mode
 - Miniplayer
