@@ -8,8 +8,8 @@
 - First Release
 
 ## Upcoming (sorted by priority)
-- Customizable Crossfade
-- Different views (So far theres only Album)
+- Customizable Crossfade and other settings
+- Different views (so far theres only Album)
 - Customizable Crossfade
 - Custom Icons
 - Toggle Dark mode
