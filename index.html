@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>the mp3 player</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+<style>
+@font-face { font-family: 'SpotifyMix'; src: url('SpotifyMix-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; }
+body { background: #121212; color: white; font-family: 'SpotifyMix', sans-serif; padding: 20px; padding-bottom: 140px; }
+h1 { margin-bottom: 10px; }
+.library { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
+.album-card, .song-card { background: #181818; padding: 15px; border-radius: 8px; cursor: pointer; transition: 0.3s; text-align: center; }
+.album-card:hover, .song-card:hover { background: #282828; }
+.album-card.active, .song-card.active { outline: 2px solid #1DB954; }
+.album-card img, .song-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; margin-bottom: 10px; }
+.player { position: fixed; bottom: 0; left: 0; width: 100%; height: 90px; background: #181818; border-top: 1px solid #2a2a2a; display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; padding: 0 20px; }
+.now-playing { display: flex; align-items: center; gap: 14px; overflow: hidden; }
+.now-playing img { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; }
+.track-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-artist { font-size: 0.85em; color: #b3b3b3; }
+.controls { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+.buttons { display: flex; gap: 18px; justify-content: center; }
+.buttons button { background: none; border: none; color: white; font-size: 18px; cursor: pointer; font-family: 'SpotifyMix', sans-serif; }
+.play { background: white; color: black; width: 40px; height: 40px; border-radius: 50%; }
+.progress-container { display: flex; align-items: center; gap: 8px; width: 100%; }
+.progress { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 0.75em; color: #b3b3b3; font-family: 'SpotifyMix', sans-serif; }
+.bar { flex: 1; height: 4px; background: #404040; border-radius: 2px; cursor: pointer; }
+.fill { height: 100%; background: #1DB954; width: 0%; }
+.extra-controls { display: flex; gap: 10px; }
+.extra-controls button { background: none; border: 1px solid #404040; padding: 4px 8px; border-radius: 4px; color: white; cursor: pointer; font-size: 0.85em; }
+.active-mode { border-color: #1DB954; }
+#back { cursor: pointer; margin-bottom: 20px; color: #1DB954; display: none; }
+#scan { margin-bottom: 10px; cursor: pointer; }
+audio { display: none; }
+</style>
+</head>
+<body>
+
+<h1>Your Library</h1>
+<button id="scan">📁 Scan Folder</button>
+<div id="back">⬅ Back to albums</div>
+<div class="library" id="library"></div>
+
+<div class="player">
+<div class="now-playing">
+<img id="np-img">
+<div>
+<div class="track-title" id="np-title">Nothing playing</div>
+<div class="track-artist" id="np-artist"></div>
+</div>
+</div>
+<div class="controls">
+<div class="buttons">
+<button id="prev">⏮</button>
+<button id="play" class="play">▶</button>
+<button id="next">⏭</button>
+</div>
+<div class="progress-container">
+<span id="current">0:00</span>
+<div class="bar" id="bar"><div class="fill" id="fill"></div></div>
+<span id="duration">0:00</span>
+<div class="extra-controls">
+<button id="repeat">Repeat: Off</button>
+<button id="shuffle">Shuffle: Off</button>
+</div>
+</div>
+</div>
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+const libraryEl = document.getElementById('library');
+const audio = document.getElementById('audio');
+const npImg = document.getElementById('np-img');
+const npTitle = document.getElementById('np-title');
+const npArtist = document.getElementById('np-artist');
+const playBtn = document.getElementById('play');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const bar = document.getElementById('bar');
+const fill = document.getElementById('fill');
+const cur = document.getElementById('current');
+const dur = document.getElementById('duration');
+const backBtn = document.getElementById('back');
+const scanBtn = document.getElementById('scan');
+const repeatBtn = document.getElementById('repeat');
+const shuffleBtn = document.getElementById('shuffle');
+
+const folderInput = document.createElement('input');
+folderInput.type = 'file';
+folderInput.webkitdirectory = true;
+folderInput.directory = true;
+folderInput.style.display = 'none';
+document.body.appendChild(folderInput);
+
+let albums = {};
+let list = [], idx = 0;
+let repeatMode = 0;
+let shuffleMode = 0;
+let shuffledOrder = [];
+
+async function scanFilesFromArray(filesArray){
+albums = {};
+for (let f of filesArray){
+await new Promise(resolve=>{
+jsmediatags.read(f,{
+onSuccess: tag=>{
+const album = tag.tags.album||'Unknown Album';
+const song = { name: tag.tags.title||f.name.replace('.mp3',''), artist: tag.tags.artist||'', mp3: f, img: null };
+if(tag.tags.picture){
+const {data, format}=tag.tags.picture;
+let base64String="";
+for(let i=0;i<data.length;i++) base64String+=String.fromCharCode(data[i]);
+song.img="data:"+format+";base64,"+btoa(base64String);
+}
+if(!albums[album]) albums[album]=[];
+albums[album].push(song);
+resolve();
+}, onError: ()=>{
+const album='Unknown Album';
+const song={name:f.name.replace('.mp3',''), artist:'', mp3:f, img:null};
+if(!albums[album]) albums[album]=[];
+albums[album].push(song);
+resolve();
+}
+});
+});
+}
+showAlbums();
+}
+
+function showAlbums(){
+libraryEl.innerHTML='';
+backBtn.style.display='none';
+for(let albumName in albums){
+const card=document.createElement('div');
+card.className='album-card';
+card.onclick=()=>showSongs(albumName);
+const img=document.createElement('img');
+img.src=albums[albumName][0].img||'https://via.placeholder.com/300';
+card.append(img, document.createTextNode(albumName));
+libraryEl.append(card);
+}
+}
+
+function showSongs(albumName){
+libraryEl.innerHTML='';
+backBtn.style.display='block';
+const songs=albums[albumName];
+songs.forEach((s,i)=>{
+const card=document.createElement('div');
+card.className='song-card';
+card.onclick=()=>play(i,songs);
+const img=document.createElement('img');
+img.src=s.img||'https://via.placeholder.com/300';
+card.append(img, document.createTextNode(s.name));
+libraryEl.append(card);
+});
+}
+
+backBtn.onclick=()=>showAlbums();
+
+function prepareShuffle(){
+if(shuffleMode===0){ shuffledOrder=[]; return; }
+if(shuffleMode===1){
+shuffledOrder = [...Array(list.length).keys()];
+shuffledOrder.sort(()=>Math.random()-0.5);
+idx = 0;
+}
+if(shuffleMode===2){
+const allSongs=[];
+for(let album in albums) allSongs.push(...albums[album]);
+list=allSongs;
+shuffledOrder = [...Array(list.length).keys()];
+shuffledOrder.sort(()=>Math.random()-0.5);
+idx=0;
+}
+}
+
+function play(i,listToPlay){
+if(listToPlay){
+list=listToPlay;
+idx=i;
+prepareShuffle();
+}else{ idx=i; }
+const t=list[i];
+audio.src = URL.createObjectURL(t.mp3);
+audio.play();
+playBtn.textContent='⏸';
+npImg.src=t.img||'https://via.placeholder.com/56';
+npTitle.textContent=t.name;
+npArtist.textContent=t.artist;
+document.querySelectorAll('.song-card').forEach((c,n)=>c.classList.toggle('active',n===i));
+}
+
+playBtn.onclick=()=>{ audio.paused?audio.play():audio.pause(); playBtn.textContent=audio.paused?'▶':'⏸'; }
+prevBtn.onclick=()=>{ if(shuffleMode){ idx=(idx-1+shuffledOrder.length)%shuffledOrder.length; play(shuffledOrder[idx]); } else play((idx-1+list.length)%list.length); };
+nextBtn.onclick=()=>{ if(shuffleMode){ idx=(idx+1)%shuffledOrder.length; play(shuffledOrder[idx]); } else play((idx+1)%list.length); };
+
+audio.ontimeupdate=()=>{ fill.style.width=(audio.currentTime/audio.duration*100||0)+'%'; cur.textContent=fmt(audio.currentTime); dur.textContent=fmt(audio.duration); }
+bar.onclick=e=>{ const r=bar.getBoundingClientRect(); audio.currentTime=((e.clientX-r.left)/r.width)*audio.duration; }
+
+audio.onended=()=>{ if(repeatMode===1){ play(idx); } else if(repeatMode===2){ nextBtn.onclick(); } else{ npTitle.textContent='Nothing playing'; npArtist.textContent=''; npImg.src=''; playBtn.textContent='▶'; } }
+
+const fmt=t=>isNaN(t)?'0:00':Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
+
+scanBtn.onclick=()=>folderInput.click();
+folderInput.onchange=async e=>{ const files=[...e.target.files].filter(f=>f.name.endsWith('.mp3')); await scanFilesFromArray(files); };
+
+repeatBtn.onclick=()=>{ repeatMode=(repeatMode+1)%3; let txt = repeatMode===0?'Off':repeatMode===1?'One':'All'; repeatBtn.textContent='Repeat: '+txt; repeatBtn.classList.toggle('active-mode',repeatMode!==0); };
+shuffleBtn.onclick=()=>{ shuffleMode=(shuffleMode+1)%3; let txt = shuffleMode===0?'Off':shuffleMode===1?'Album':'All'; shuffleBtn.textContent='Shuffle: '+txt; shuffleBtn.classList.toggle('active-mode',shuffleMode!==0); prepareShuffle(); };
+</script>
+</body>
+</html>
