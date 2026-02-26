@@ -7,6 +7,10 @@
 ## V1.0
 - First Release
 
+## V1.1
+- SVG Icons
+- Spotify Mix font
+
 ## Upcoming (sorted by priority)
 - Customizable Crossfade and other settings
 - Different views (so far there's only Album)
