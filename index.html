@@ -4,8 +4,8 @@
 <title>the mp3 player</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <style>
-@font-face { font-family: 'SpotifyMix'; src: url('./assets/SpotifyMix-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; }
-@font-face { font-family: 'SpotifyMix'; src: url('./assets/SpotifyMix-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; }
+@font-face { font-family: 'SpotifyMix'; src: url('./asset/SpotifyMix-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; }
+@font-face { font-family: 'SpotifyMix'; src: url('./asset/SpotifyMix-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; }
 body { background: #121212; color: white; font-family: 'SpotifyMix', sans-serif; padding: 20px; padding-bottom: 140px; margin: 0; }
 h1 { margin-bottom: 10px; }
 .library { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
@@ -105,9 +105,9 @@ audio { display: none; }
 
   <div class="controls">
     <div class="buttons">
-      <button id="prev"><img src="./assets/skip.svg" alt="Previous"></button>
-      <button id="play"><img id="play-icon" src="./assets/play.svg" alt="Play"></button>
-      <button id="next"><img src="./assets/skip.svg" alt="Next"></button>
+      <button id="prev"><img src="./asset/skip.svg" alt="Previous"></button>
+      <button id="play"><img id="play-icon" src="./asset/play.svg" alt="Play"></button>
+      <button id="next"><img src="./asset/skip.svg" alt="Next"></button>
     </div>
     <div class="progress-container">
       <span id="current">0:00</span>
@@ -157,7 +157,7 @@ let shuffleMode = 0;
 let shuffledOrder = [];
 
 function setPlayIcon(playing) {
-  playIcon.src = playing ? './assets/pause.svg' : './assets/play.svg';
+  playIcon.src = playing ? './asset/pause.svg' : './asset/play.svg';
   playIcon.alt = playing ? 'Pause' : 'Play';
 }
 
